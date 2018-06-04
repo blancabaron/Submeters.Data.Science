@@ -338,7 +338,7 @@ labs(x="Time", y="Watt/hour",
 theme_linedraw(base_size = 11, base_family = "")
 
 
-### Let's try to standarize the data: We will see as intensity and Active Power are the same --> we prove physics
+### We standarize the data: We will see as intensity and Active Power are the same --> we prove physics
 
 x2007_prova<- x2007_sub%>% select(DateTime, ActivePower_WH, Reactive_WH, Voltage_WH, Intensity_WH )
 X2007NORM <- lapply(x2007_prova, function(x) if(is.numeric(x)){scale(x, center=T, scale=T)}else x) 
@@ -407,7 +407,7 @@ ggplot() +
 # To find out the incredible corr:
 x<- df_norm[2:5]
 cor(x)
-## Conculsion: Phisics are proved --> V*I=Power
+## Conculsion: Physics are proved --> V*I=Power
 
 
 ## TIME SERIES##
@@ -419,7 +419,6 @@ MonthDay<-as.Date(paste(MonthDay$day, MonthDay$month, sep="/"), format="%d/%m") 
 JanFeb<-cbind(JanFeb, MonthDay)
 
 
-#Wrong:
 tbl_JanFeb<- JanFeb%>% 
    group_by(month)%>%
    group_by(Day)%>%
