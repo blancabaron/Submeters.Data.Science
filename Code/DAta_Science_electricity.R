@@ -293,28 +293,7 @@ ggplot() +
   labs(x="2008", y="Average Consumption", title="Average Consumption 2008 by Month") + 
   theme_linedraw(base_size = 11, base_family = "")
 
-
-------------- FINISHED ON RMARKDOWN -------------
-# overlaying the plots to see if the overlays are suggestive of the occupant's activities (e.g., the washing is done after dinner is cooked)
-
-# timeline - dataset( the one with one minute) - do it over one year, and let's see later: 
-#Let's use x2007 datatalbe by the moment. 
-#Every submeter on the timeline
-#Then we can try it with an smaller scale over the day 
-# normalize the data of the submeters before 
-
-# the point: we add value to the building by adding the submeters. How can we show to our clients that they are going to save money? who is the direct client going to make money, not just add value?? 
-## CLEANING THE DATA: 1. there is periods of time where the time changes one hour up/dow. 
-                    # 2. missing values: find out WHY there is missing values. Are the on holidays? Can we delete them? Or can we replace them? 
-
-
-#What I want to do? Activity of the guy on a every day life. --> one for weekdays and one for weekends for every month. plot- timeline
-# mitjanda del dilluns a cada minut, mitjana del dimats a cada minut ( potser normalitzat)
-# Objectiu: Mirar de la manera que utilitza els submeters al llarg de la setmana. 
-# A molt petita escala podre veure que es tot el que utlitza
-#Objectiu ventes: El client podra veure tot el que utilitza cuanta energia gasta en tot moment. 
-
-#Again, we try to creat a day timeline with the submeters:
+#Again, we try to create a day timeline with the submeters:
 x2007_sub<- subset(x2007, Minute==15)
 x2007_sub<-subset(x2007_sub, month==1)
 x2007_sub<-subset(x2007_sub, week_days=="Monday")
