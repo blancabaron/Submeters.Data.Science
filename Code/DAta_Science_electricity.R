@@ -3,13 +3,12 @@
 pacman::p_load(dplyr, tidyr, ggplot2,lubridate, labeling, scales, tseries, forecast)
 
 ####Load Data####
-setwd("~/Desktop/Ubiqum/R_task5_electricity") # quarat de bai a la dreta/ punts suspensius ( go to directory), el busques i cliques "open". Copiar i pegar directory de la console al script. 
-Consumption <- read.csv("household_power_consumption.txt", TRUE, sep = ";", na.strings = c("NA","?"), stringsAsFactors = FALSE)  # Converteix amb NA els strings NA i ?  --> amb el interrogant,canviem els espais amb buit a NA pero de manera q no els interpreta com factors ( sino totoa la columa la interpretaria comm a factor!)
+setwd("~/Desktop/Ubiqum/R_task5_electricity")
+Consumption <- read.csv("household_power_consumption.txt", TRUE, sep = ";", na.strings = c("NA","?"), stringsAsFactors = FALSE)  
 
 #### Exploring the data ####
 
 ####Time Conversion####
-# It creates a new column in the Consumption database with the combination of the date and the time. # StringsAsFactor = FALSE --> otherwise it will convert directily the vectors as string  ( the paste has joined DAta + Time and transformed the result to characthers.)
 Consumption$DateTime <-paste(Consumption$Date,Consumption$Time)
 Consumption <- Consumption[,c(ncol(Consumption), 1:(ncol(Consumption)-1))]
 
@@ -25,27 +24,40 @@ summarise(Consumption, meanV = mean(Voltage, na.rm = TRUE))
 Consumption <- Consumption %>% 
   mutate(DateTime = ifelse(between(DateTime, as_datetime("2007-03-25 02:00:00"),
                                    as_datetime("2007-10-28 01:59:00")),
-                                   (DateTime + 3600) , (DateTime))) # we write 1:59 because we know it is already adding +1, the time actually changes at 2:59. ( We put spaces to make it more clear)
-Consumption <- Consumption %>% mutate(DateTime = ifelse(between(DateTime, as_datetime("2008-03-30 02:00:00"), as_datetime("2008-10-26 01:59:00")), (DateTime + 3600) ,(DateTime)))
-Consumption <- Consumption %>% mutate(DateTime = ifelse(between(DateTime, as_datetime("2009-03-29 02:00:00"), as_datetime("2009-10-25 01:59:00")), (DateTime + 3600) ,(DateTime)))
-Consumption <- Consumption %>% mutate(DateTime = ifelse(between(DateTime, as_datetime("2010-03-28 02:00:00"), as_datetime("2010-10-31 01:59:00")), (DateTime + 3600) ,(DateTime)))
+                                   (DateTime + 3600) ,
+                                   (DateTime))) # we write 1:59 because we know it is already adding +1, the time actually changes at 2:59. 
+Consumption <- Consumption %>%
+mutate(DateTime = ifelse(between(DateTime, as_datetime("2008-03-30 02:00:00"),
+                                 as_datetime("2008-10-26 01:59:00")),
+                         (DateTime + 3600) ,
+                         (DateTime)))
+
+Consumption <- Consumption %>%
+mutate(DateTime = ifelse(between(DateTime, as_datetime("2009-03-29 02:00:00"),
+                                 as_datetime("2009-10-25 01:59:00")),
+                         (DateTime + 3600) ,
+                         (DateTime)))
+
+Consumption <- Consumption %>%
+mutate(DateTime = ifelse(between(DateTime, as_datetime("2010-03-28 02:00:00"),
+                                 as_datetime("2010-10-31 01:59:00")),
+                         (DateTime + 3600) ,
+                         (DateTime)))
 
 Consumption$DateTime<- as.POSIXct(Consumption$DateTime, origin="1970-01-01", tz="GMT")  # It has been transformed as numeric, so we had to change it again writing this origin ( origin of data in R)
                                                                                                                                                     
-# NA'S:   
-# if they shut down the electric power NA==0. However, if it was an electric random shit mess, we have to replace values. the previous row its achieved by: lag(data)
 # We have replaced all NA's with 0: 
 
 Consumption_ <- replace(Consumption, is.na(Consumption), 0)
 Consumption_[!complete.cases(Consumption_),]
 
-######  **Creating new variables ####
+#### Creating new variables ####
 
 #We add a new column with Watts/ hour in global consumption, so we have it on the same metrics than submeter:
 Consumption<-cbind(Consumption, Consumption$Global_active_power*1000/60)
 colnames(Consumption)[11]<- "ActivePower_WH"
 
-#New column Active_energy is the energy consumed by the house not measured by the sub_metering:
+#New column Active_energy is the energy consumed by the house not measured by any sub_metering:
 Consumption<- cbind(Consumption, Consumption$ActivePower_WH-Consumption$Sub_metering_1-Consumption$Sub_metering_2-Consumption$Sub_metering_3)
 colnames(Consumption)[12]<- "RestConsumption"
 #New colum with day of the week:
@@ -58,7 +70,7 @@ colnames(Consumption)[14]<-"month"
 #New column with month and year:
 MonthYear <- separate(Consumption, Date, into=c("year", "month", "day"))
 MonthYear <- paste(MonthYear$year, MonthYear$month, sep="/")
-Consumption <-cbind(Consumption, MonthYear)  ## Column num15 --> MontYear
+Consumption <-cbind(Consumption, MonthYear)  
 
 #new column by minutes:
 Minute <- separate(Consumption, Time, into = c("Hour", "Minute","Seconds" ))
@@ -75,6 +87,7 @@ colnames (Consumption)[17]<- "Year"
 # New column with Reactive Power Watts/Hour:
 Consumption<-cbind(Consumption, Consumption$Global_reactive_power*1000/60)
 colnames(Consumption)[18]<-"Reactive_WH"
+
 #New column with IntxVolt in HOURS:
 Consumption<-cbind(Consumption, (Consumption$Voltage*Consumption$Global_intensity)/60)
 colnames(Consumption)[19]<- "VoltxInt_WH"
@@ -126,9 +139,7 @@ July_means$week_days <- factor(July_means$week_days, levels= c( "Monday",
                                                               "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"))
 July_means[order(July_means$week_days), ]
 
-#We do a plot: 
 plot(factor(July_means$week_days), July_means$Mean_GC, main = "July total electricity consumption by day week")
-
 
 
 ### Years Consumption  Mean global#### 
@@ -150,7 +161,7 @@ Month_ <- c("Febrary","Febrary", "Febrary","Febrary","Febrary","Febrary","Febrar
 anual.week<-cbind(anual.week, Month_)
 Month_ <- c("July","July","July","July","July","July","July")
 July_means<-cbind(July_means, Month_)
-anual.week<-rbind(anual.week, July_means) # We unite both datatables by row ( they have to have the same col names)
+anual.week<-rbind(anual.week, July_means) # We unite both datatables by row 
 colnames(anal_week)[7]<- "Month"
 
 #Two graph with the Means_GC
@@ -197,20 +208,13 @@ ggplot() +
   scale_y_continuous(labels=scales::comma) + 
   theme_linedraw(base_size = 11, base_family = "")
 
-
-#And I have applied a theme, I can choose the theame ( code - Function reference ggplot)
+# Plot without dodge position:
 ggplot() + 
   geom_col(data=tbl_year3, aes(x=Year, y=Consump, fill=Submeter)) + 
   labs(x="Year", y="Watt/hour", title="Total Consumption by Sub-meters") + 
-  theme_linedraw(base_size = 11, base_family = "")  #Now we do it togeathger:
- #Now we do it togeathger:
-ggplot() + 
-  geom_col(data=tbl_year3, aes(x=Year, y=Consump, fill=Submeter)) + 
-  labs(x="Year", y="Watt/hour ", title="Total Consumption by Sub-meters")
+  theme_linedraw(base_size = 11, base_family = "")  
 
-# Do the timeline by months and years --> Rpubs/ubiqum for help on lyers: 
  
-
 #### 2007 #### Second: Create subset by year and averages
 x2007<- subset(Consumption, Year == 2007)
 
@@ -222,7 +226,7 @@ tbl_2007<- x2007 %>%
             S3.WaterHeater_AirConditioner = mean(S3.WaterHeater_AirConditioner, na.rm= TRUE),
             RestConsumption = mean(RestConsumption, na.rm=TRUE))
             
-#Third: Reshape the data and create the plot:
+# Reshape the data and create the plot:
 tbl_2007[1,1] <- "Jan"
 tbl_2007[2,1] <- "Feb"
 tbl_2007[3,1] <- "Mar"
@@ -308,17 +312,33 @@ x2007_sub<-cbind(x2007_sub, x2007_sub$Global_intensity/60)
 colnames(x2007_sub)[21]<-"Voltage_WH"
 colnames(x2007_sub)[22]<- "Intensity_WH"
 
-x2007_sub_graph<-x2007_sub %>% gather(Submeter, Consump, S1.Kitchen:ActivePower_WH)
-ggplot()+geom_line(data=x2007_sub_graph, aes(x=DateTime, y=Consump, color=Submeter),alpha = 0.4, size = 4) + labs(x="Time", y="Watt/hour", title="Consumption by Submeter on January 15th 2007") + theme_linedraw(base_size = 11, base_family = "")
-### DAR CAPA DE PLOT_LY ( DANI)
+x2007_sub_graph<-x2007_sub %>%
+gather(Submeter, Consump, S1.Kitchen:ActivePower_WH)
+
+ggplot()+
+geom_line(data=x2007_sub_graph,
+          aes(x=DateTime, y=Consump,
+              color=Submeter),
+          alpha = 0.4, size = 4) + 
+labs(x="Time", y="Watt/hour",
+     title="Consumption by Submeter on January 15th 2007") + 
+theme_linedraw(base_size = 11, base_family = "")
 
 
-x2007_sub_EL<- x2007_sub%>% gather(Power, Consump,ActivePower_WH, Reactive_WH,VoltxInt_WH)
-ggplot()+geom_line(data=x2007_sub_EL, aes(x=DateTime, y=Consump, color=Power), alpha = 0.4, size = 4) + labs(x="Time", y="Watt/hour", title="Power Consumption on January 15th 2007") + theme_linedraw(base_size = 11, base_family = "")
+
+x2007_sub_EL<- x2007_sub%>%
+gather(Power, Consump,ActivePower_WH, Reactive_WH,VoltxInt_WH)
+
+ggplot() +
+geom_line(data=x2007_sub_EL,
+          aes(x=DateTime, y=Consump, color=Power),
+          alpha = 0.4, size = 4) + 
+labs(x="Time", y="Watt/hour",
+     title="Power Consumption on January 15th 2007") + 
+theme_linedraw(base_size = 11, base_family = "")
 
 
-### PROVA, hem ESTANDARITZAT: Freak: La intensitat i la Active Power son iguals. 
-#El que dona la forma a la energia, es la intensitat. 
+### Let's try to standarize the data: We will see as intensity and Active Power are the same --> we prove physics
 
 x2007_prova<- x2007_sub%>% select(DateTime, ActivePower_WH, Reactive_WH, Voltage_WH, Intensity_WH )
 X2007NORM <- lapply(x2007_prova, function(x) if(is.numeric(x)){scale(x, center=T, scale=T)}else x) 
@@ -344,18 +364,46 @@ colnames(x2008_sub)[21]<-"Voltage_WH"
 colnames(x2008_sub)[22]<- "Intensity_WH"
 
 
-x2008_sub_graph<-x2008_sub %>% gather(Submeter, Consump, S1.Kitchen:ActivePower_WH)
-ggplot()+geom_line(data=x2008_sub_graph, aes(x=DateTime, y=Consump, color=Submeter),alpha = 0.4, size = 4) + labs(x="Time", y="Watt/hour", title="Consumption by Submeter on August 31st 2008") + theme_linedraw(base_size = 11, base_family = "")
-##
+x2008_sub_graph<-x2008_sub %>%
+                    gather(Submeter, Consump, S1.Kitchen:ActivePower_WH)
+ggplot() +
+          geom_line(data=x2008_sub_graph,
+                    aes(x=DateTime, y=Consump, color=Submeter),
+                    alpha = 0.4, size = 4) + 
+                    labs(x="Time", y="Watt/hour",
+                         title="Consumption by Submeter on August 31st 2008") + 
+                    theme_linedraw(base_size = 11, base_family = "")
+
 #We can see how intxvolt == ActivePower again:
-x2008_sub_EL<- x2008_sub%>% gather(Power, Consump,ActivePower_WH, Reactive_WH,VoltxInt_WH)
-ggplot()+geom_line(data=x2008_sub_EL, aes(x=DateTime, y=Consump, color=Power), alpha = 0.4, size = 4) + labs(x="Time", y="Watt/hour", title="Power Consumption on August 31st 2008") + theme_linedraw(base_size = 11, base_family = "")
-# normalitcem segon dia: and YESS!!! LA INTENSITAT 100% CORR AMB la potencia activa!! 
-x2008_prova<- x2008_sub%>% select(DateTime, ActivePower_WH, Reactive_WH, Voltage_WH, Intensity_WH )
+x2008_sub_EL<- x2008_sub%>%
+                    gather(Power, Consump,ActivePower_WH, Reactive_WH,VoltxInt_WH)
+ggplot()+
+        geom_line(data=x2008_sub_EL,
+                  aes(x=DateTime, y=Consump, color=Power),
+                  alpha = 0.4, size = 4) + 
+                    labs(x="Time", y="Watt/hour",
+                         title="Power Consumption on August 31st 2008") +
+                    theme_linedraw(base_size = 11, base_family = "")
+
+                    
+# We prove as intensity is 100% corr with active power: 
+                    
+x2008_prova<- x2008_sub %>% 
+                    select(DateTime, ActivePower_WH, Reactive_WH, Voltage_WH, Intensity_WH )
+                    
 X2008NORM <- lapply(x2008_prova, function(x) if(is.numeric(x)){scale(x, center=T, scale=T)}else x) 
 df_norm2008<-as.data.frame(X2008NORM)
-df_norm_graph<- df_norm2008%>% gather(Power, Consump, ActivePower_WH:Intensity_WH)
-ggplot()+geom_line(data=df_norm_graph, aes(x=DateTime, y=Consump, color=Power), alpha = 0.4, size = 4) + labs(x="Time", y="Watt/hour", title="Power Consumption on August 31st 2008") + theme_linedraw(base_size = 11, base_family = "")
+                    
+df_norm_graph<- df_norm2008%>% 
+                    gather(Power, Consump, ActivePower_WH:Intensity_WH)
+                    
+ggplot() +
+       geom_line(data=df_norm_graph, 
+                 aes(x=DateTime, y=Consump, color=Power),
+                 alpha = 0.4, size = 4) + 
+                    labs(x="Time", y="Watt/hour", title="Power Consumption on August 31st 2008") + 
+                    theme_linedraw(base_size = 11, base_family = "")
+
 # To find out the incredible corr:
 x<- df_norm[2:5]
 cor(x)
@@ -440,7 +488,8 @@ ggplot() +
   theme_linedraw(base_size = 11, base_family = "")
 
 
-ggplot()+geom_line(data=combind_Sub, aes(x=Time, y=tsS1+tsS2+tsS3))
+ggplot() +
+  geom_line(data=combind_Sub, aes(x=Time, y=tsS1+tsS2+tsS3))
 
 a<- plot(combind_Sub, plot.type = "single", col=c("blue", "red", "black"), main="Daily average sub-meters consumption prices", ylab="Consumption Watt/Hour")
 ab <- a + 
@@ -482,7 +531,7 @@ plot(adjusted_decompose_tsday, main="Seasonable adjusted Active Power", ylab="Co
 table_fore<- data.frame(data=tsMonth, as.numeric(time(tsMonth)))
 colnames(table_fore)<- c("Active_Energy", "Time")
 
-mymodel<- tslm(Active_Energy~trend+season, table_fore) # I believe I should remove "season". At the end I DID NOT REMOVE IT!!
+mymodel<- tslm(Active_Energy~trend+season, table_fore) 
 
 forecast_month<- forecast(mymodel, h=120)  # we forecast the next 10 years
 autoplot(forecast_month)
@@ -511,7 +560,12 @@ mymodelS1<-tslm(Active_Energy~trend+season, table_S1)
 forecastS1<- forecast(mymodelS1, h=12)
 autoplot(forecastS1)
 summary(forecastS1) #RMSE=0,2 
-autoplot(forecastS1)+ggtitle("Forecast 1 Year consumption S1-Kitchen" )+xlab("Time")+ylab("Consumption Watt/Hour") + theme_linedraw(base_size = 11, base_family = "") + theme(plot.title = element_text(hjust = 0.5))
+autoplot(forecastS1) +
+                    ggtitle("Forecast 1 Year consumption S1-Kitchen" ) +
+                    xlab("Time") +
+                    ylab("Consumption Watt/Hour") + 
+                    theme_linedraw(base_size = 11, base_family = "") +
+                    theme(plot.title = element_text(hjust = 0.5))
 
 table_S2<- data.frame(data=tsS2, as.numeric(time(tsS2)))
 colnames(table_S2)<-c("Active_Energy", "Time")
@@ -519,7 +573,11 @@ mymodelS2<-tslm(Active_Energy~trend+season, table_S2)
 forecastS2<- forecast(mymodelS2, h=12)
 autoplot(forecastS2)
 summary(forecastS2) #RMSE=0,2 
-autoplot(forecastS2)+ggtitle("Forecast 1 Year consumption S2-Laundry Room " )+xlab("Time")+ylab("Consumption Watt/Hour") + theme_linedraw(base_size = 11, base_family = "") + theme(plot.title = element_text(hjust = 0.5))
+autoplot(forecastS2) +
+                    ggtitle("Forecast 1 Year consumption S2-Laundry Room " ) +
+                    xlab("Time")+ylab("Consumption Watt/Hour") + 
+                    theme_linedraw(base_size = 11, base_family = "") + 
+                    theme(plot.title = element_text(hjust = 0.5))
 
 table_S3<- data.frame(data=tsS3, as.numeric(time(tsS3)))
 colnames(table_S3)<-c("Active_Energy", "Time")
@@ -527,7 +585,12 @@ mymodelS3<-tslm(Active_Energy~trend+season, table_S3)
 forecastS3<- forecast(mymodelS3, h=12)
 autoplot(forecastS3)
 summary(forecastS3) # 0,73
-autoplot(forecastS3)+ggtitle("Forecast 1 Year consumption S3-Water heater & Air Condtioner" )+xlab("Time")+ylab("Consumption Watt/Hour") + theme_linedraw(base_size = 11, base_family = "") + theme(plot.title = element_text(hjust = 0.5))
+autoplot(forecastS3) + 
+                    ggtitle("Forecast 1 Year consumption S3-Water heater & Air Condtioner" )+
+                    xlab("Time") +
+                    ylab("Consumption Watt/Hour") + 
+                    theme_linedraw(base_size = 11, base_family = "") + 
+                    theme(plot.title = element_text(hjust = 0.5))
 
 #### HoltWithers forecast - for additive series: ####
 #By Month
@@ -541,10 +604,11 @@ acf(prediction_HoltWinters_month$residuals, na.action=na.pass, lag.max = 20) # w
 Box.test(prediction_HoltWinters_month$residuals, lag=20, type="Ljung-Box") # We can see with the P-value that are correlated, hence we could imporve the model. 
 plot(prediction_HoltWinters_month$residuals) # we can plot the errors. 
 summary(prediction_HoltWinters_month) #RMSE=3,60 MAPE=19,9
+
 #By Days
 holt_forecast_day<-HoltWinters(adjusted_decompose_tsday, beta=FALSE, gamma=FALSE)
 plot(holt_forecast_day)
-holt_forecast_day$SSE # surrealistament alt.. 
+holt_forecast_day$SSE 
 prediction_HoltWinters_Day<-forecast(holt_forecast_day, h=60)
 plot(prediction_HoltWinters_Day)
 acf(prediction_HoltWinters_Day$residuals, na.action=na.pass, log.max=20)
@@ -555,21 +619,25 @@ summary(prediction_HoltWinters_Day) #RMSE=5,6 MAPE=27,67
 #### ARIMA MODEL: ARIMA(p,d,q)####
 # we need: uncorrelated forecast errors + contant variance + mean=0 (normally distributed)
 # To find manually p,d,q:
-a<-diff(tsMonth, differences=1) # DECIDE IF ADD OR NOT SEANOSALITY, IN THIS CASE WE DIDINT, OTHERWISE USE ADJUSTED DECOMPOSED. 
-plot.ts(a) # we achieve worst mean, because we already  don have season.  
+a<-diff(tsMonth, differences=1). 
+plot.ts(a) # we achieve worst mean, because we already don`t have season.  
 acf(a, lag.max=10)
 acf(a, lag.max=10, plot= FALSE)  # for the p 
 pacf(a, lag.max=10)  # for the q
 
-# to find the ARIMA automatically:  - recommended. 
+# to find the ARIMA automatically: - recommended. 
 autoarima_month <- auto.arima(tsMonth) # We use this one because we dont want the season 
-summary(autoarima_month)  #my ARIMA is (000)(0,1,1)[12] - its should be just (p,d,q) but I decided to add seasonallity
+summary(autoarima_month)  #my ARIMA is (000)(0,1,1)[12] 
 
 foreArimaMonth<-forecast(autoarima_month, h=12)
 plot(foreArimaMonth)
 Box.test(foreArimaMonth$residuals, lag=20, type="Ljung-Box") # We check the P-value, etc. 
 summary(foreArimaMonth) # RMSE=2,10 MAPE=9,74
-autoplot(foreArimaMonth)+ggtitle("Forecast 1 Year Consumption Active Energy")+xlab("Time")+ylab("Average Consumption Watt/Hour") + theme_linedraw(base_size = 11, base_family = "") + theme(plot.title = element_text(hjust = 0.5))
+autoplot(foreArimaMonth) +
+                    ggtitle("Forecast 1 Year Consumption Active Energy") +
+                    xlab("Time")+ylab("Average Consumption Watt/Hour") + 
+                    theme_linedraw(base_size = 11, base_family = "") + 
+                    theme(plot.title = element_text(hjust = 0.5))
 
 # Without season: 
 
@@ -578,14 +646,18 @@ summary(autoarima_month2)
 foreArimaMonth2<-forecast(autoarima_month2, h=32)
 summary(foreArimaMonth2)
 plot(foreArimaMonth2)
-autoplot(foreArimaMonth2)+ggtitle("Forecast 3 Years Total Consumption Active Energy")+xlab("Time")+ylab("Average Consumption Watt/Hour") + theme_linedraw(base_size = 11, base_family = "") + theme(plot.title = element_text(hjust = 0.5))
+autoplot(foreArimaMonth2) +
+                    ggtitle("Forecast 3 Years Total Consumption Active Energy") +
+                    xlab("Time")+ylab("Average Consumption Watt/Hour") + 
+                    theme_linedraw(base_size = 11, base_family = "") + 
+                    theme(plot.title = element_text(hjust = 0.5))
 
 # Same Arima for h=2 ( predicting jsut 2 months
 
 foreArimaMonth2<-forecast(autoarima_month, h=2)
 plot(foreArimaMonth2)
 Box.test(foreArimaMonth2$residuals, lag=20, type="Ljung-Box") # We check the P-value, etc. 
-summary(foreArimaMonth2) # Same metrxi RMSE=2,10 MAPE =9,7
+summary(foreArimaMonth2) # Same metrix RMSE=2,10 MAPE =9,7
 
 #Arima model By Days:
 autoarima_days<-auto.arima(adjusted_decompose_tsday)
@@ -610,7 +682,7 @@ plot(foreArimaS3)
 summary(foreArimaS3)  ## better lineal model 
 
 
-#ARMA MODEL: ARMA(p,q)  --- I CANT MAKE THE PLOT.  LETS LEAVE IT! NO TIME. 
+#ARMA MODEL: ARMA(p,q) 
 install.packages("fArma")
 library(fArma)
 fit_ARMA_Month<-armaFit(~arma(0,0)(0,1), data=tsMonth)  # We use (0,0) because of the resoults in ARIMA (0,0,0)
